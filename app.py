@@ -44,8 +44,8 @@ st.title("🔢 Simulador de Cálculo")
 st.markdown("Insira os valores abaixo para gerar o cálculo:")
 
 # Inputs
-credito = st.number_input("Crédito", min_value=0.0, step=100.0, format="%.2f")
-recurso_proprio = st.number_input("Recurso Próprio", min_value=0.0, step=100.0, format="%.2f")
+credito = st.number_input("Crédito",step=10000.0, format="%.2f")
+recurso_proprio = st.number_input("Recurso Próprio",step=10000.0, format="%.2f")
 lance_embutido = st.selectbox("Lance Embutido (%)", list(range(1, 26)))
 taxa_adm = st.number_input("Taxa Adm (%)", min_value=0.0, step=0.1, format="%.2f")
 prazo = st.number_input("Prazo (meses)", min_value=1, step=1, format="%d")
@@ -82,6 +82,4 @@ if st.button("Gerar"):
     """,
     unsafe_allow_html=True
     )
-    # Exemplo:
-    st.write("🧮 Você pode exibir os resultados dos cálculos aqui.")
 
