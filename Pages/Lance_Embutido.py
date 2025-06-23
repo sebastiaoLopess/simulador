@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="Simulador de Cálculo", layout="centered")
+st.set_page_config(page_title="Lance Livre + Embutido", layout="centered")
 
 # Estilo visual
 st.markdown("""
@@ -43,7 +43,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🔢 Simulador de Cálculo")
+st.title("🔢 Lance Livre + Embutido")
 st.markdown("Insira os valores abaixo para gerar o cálculo:")
 
 # Inputs

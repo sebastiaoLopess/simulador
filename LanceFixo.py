@@ -43,7 +43,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🔢 Simulador de Cálculo")
+st.title("🔢 Lance Fixo")
 st.markdown("Insira os valores abaixo para gerar o cálculo:")
 
 # Inputs
