@@ -1,0 +1,259 @@
+import streamlit as st
+import requests
+import streamlit.components.v1 as components
+import pandas as pd
+import json
+from components import input 
+from data import consulta_auto_avaliar,consulta_estoque,trata_estoque,ano_garantia,tem_garantia,resposta,trata_data,referencias_media,referencias_min,referencias_max,trata_itens,define_placa
+
+def dados_da_avaliacao(avaliacao,classificacao):
+
+    st.markdown(input("Data Avaliação",trata_data(avaliacao['valuation_date'])),unsafe_allow_html=True)
+    st.markdown(input("Veiculo Avaliado",avaliacao['vehicle']['model']['name'] + " " + avaliacao['vehicle']['version']['name']),unsafe_allow_html=True)
+    st.markdown(input("Veiculo de Interesse",value=avaliacao['interested_vehicle']),unsafe_allow_html=True)
+    st.markdown(input("Família",value=avaliacao['vehicle']['model']['name']),unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(input("KM",value=avaliacao['vehicle']['mileage']),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Ano Modelo",value=avaliacao['vehicle']['year']),unsafe_allow_html=True)
+
+
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown(input("Finalidade",value=avaliacao['goal_name']),unsafe_allow_html=True)
+    with col4:
+        st.markdown(input("Classificacao",value=classificacao[avaliacao['rating']]),unsafe_allow_html=True)
+    col5, col6 = st.columns(2)
+    with col5:
+        st.markdown(input("Tipo de Avaliação",value=avaliacao['valuation_type_name']),unsafe_allow_html=True)
+    with col6:
+        st.markdown(input("Municipio Vec",value=avaliacao.get('vehicle', {}).get('city', '')),unsafe_allow_html=True)
+    col7, col8 = st.columns(2)
+    with col7:
+        st.markdown(input("Avaliador",value=avaliacao['valuer']['name']),unsafe_allow_html=True)
+    with col8:
+        st.markdown(input("Vendedor",value=avaliacao['user']['name']),unsafe_allow_html=True)
+    col9, col10, col11 = st.columns(3)
+    with col9:
+        st.markdown(input("Cor",value=avaliacao['vehicle']['color']['name']),unsafe_allow_html=True)
+    with col10:
+        st.markdown(input("Combustivel",value=avaliacao['vehicle']['fuel']['name']),unsafe_allow_html=True)
+    with col11:
+        st.markdown(input("Transmissão",value=avaliacao['vehicle']['transmission']['name']),unsafe_allow_html=True)
+    st.markdown(input("Motor",avaliacao['vehicle']['version']['name']),unsafe_allow_html=True)
+
+def referencias_garantia(avaliacao,classificacao):
+
+        st.markdown(input("Marca",value=avaliacao['vehicle']['make']['name']),unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(input("Ano Fabricacao",value=avaliacao['vehicle']['assembly']),unsafe_allow_html=True)
+        with col2:
+            st.markdown(input("Anos de Garantia",value=ano_garantia(avaliacao['vehicle']['make']['name'],)),unsafe_allow_html=True)
+        st.markdown(input("Provavel Garantia",value=tem_garantia(avaliacao['vehicle']['make']['name'],avaliacao['vehicle']['assembly'])),unsafe_allow_html=True)
+        col3, col4 = st.columns(2)
+        with col3:
+            st.markdown(input("Concessionaria Origem",value=resposta(avaliacao['questions'],240)),unsafe_allow_html=True)
+        with col4:
+            st.markdown(input("Revisoes Garantia",value= ("Sim" if resposta(avaliacao['questions'],154) == "1" else "Nao")),unsafe_allow_html=True)
+        col5, col6 = st.columns(2)
+        with col5:
+            st.markdown(input("Revisão 10.000KM",value= ("Sim" if resposta(avaliacao['questions'],241) == "1" else "Nao")),unsafe_allow_html=True)
+        with col6:
+            st.markdown(input("Revisão 20.000KM",value= ("Sim" if resposta(avaliacao['questions'],242) == "1" else "Nao")),unsafe_allow_html=True)
+        st.markdown(input("Revisão 30.000KM",value= ("Sim" if resposta(avaliacao['questions'],243) == "1" else "Nao")),unsafe_allow_html=True)
+
+def referencias(avaliacao,classificacao):
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown(input("Valor Avaliado",value=avaliacao['valuation_value']),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Gasto Previsto",value=avaliacao['expenses_value']),unsafe_allow_html=True)
+    with col3:
+        st.markdown(input("Top",value=avaliacao['top_dealer']),unsafe_allow_html=True)
+    with col4:
+        custo = avaliacao['valuation_value'] + avaliacao['expenses_value']
+        st.markdown(input("Custo",value=custo),unsafe_allow_html=True)
+
+    col5, col6 = st.columns(2)
+    with col5:
+        st.markdown(input("Fipe",value=avaliacao['fipe_value']),unsafe_allow_html=True)
+    with col6:
+        percent_fipe = (custo / avaliacao['fipe_value'])*100
+        st.markdown(input("% fipe",value=f"{int(percent_fipe)} %"),unsafe_allow_html=True)
+
+    col7, col8, col9, col10 = st.columns(4)
+    with col7:
+        st.markdown(input("Compra Fortaleza",value=referencias_media(avaliacao['references'],2)),unsafe_allow_html=True)
+    with col8:
+        st.markdown(input("Compra CE",value=referencias_max(avaliacao['references'],2)),unsafe_allow_html=True)
+    with col9:
+        st.markdown(input("Compra Brasil",value=referencias_min(avaliacao['references'],2)),unsafe_allow_html=True)
+
+    col11, col12, col13, col14 = st.columns(4)
+    with col11:
+        st.markdown(input("B2B Fortaleza",value=referencias_media(avaliacao['references'],8)),unsafe_allow_html=True)
+    with col12:
+        st.markdown(input("B2B Ceara",value=referencias_max(avaliacao['references'],8)),unsafe_allow_html=True)
+    with col13:
+        st.markdown(input("B2B Brasil",value=referencias_min(avaliacao['references'],8)),unsafe_allow_html=True)
+
+    col15, col16, col17, col18 = st.columns(4)
+    with col15:
+        st.markdown(input("B2C Fortaleza",value=referencias_media(avaliacao['references'],7)),unsafe_allow_html=True)
+    with col16:
+        st.markdown(input("B2C Ceara",value=referencias_max(avaliacao['references'],7)),unsafe_allow_html=True)
+    with col17:
+        st.markdown(input("B2C Brasil",value=referencias_min(avaliacao['references'],7)),unsafe_allow_html=True)
+
+    st.markdown(input("WEB MOTORS",value=referencias_min(avaliacao['references'],1)),unsafe_allow_html=True)
+
+    st.markdown(input("Sugestao de Venda",value=avaliacao['proposed_value']),unsafe_allow_html=True)
+
+    st.markdown(input("Expectativa do Cliente",value=avaliacao['expected_value']),unsafe_allow_html=True)
+
+def itens_avaliados(avaliacao):
+
+    st.table(trata_itens(avaliacao['items']))
+
+def simulador_vu(df_vendas):
+        
+        # VENDAS ESTOQUE VU (VEICULOS USADOS)
+        vendas_vu = df_vendas[df_vendas['est_cd'] == "VU"]
+        total_vendas = vendas_vu['nf_nr'].count()
+        total_venda_media_mes = int(((vendas_vu['nf_nr'].count())/6).round(0))
+        total_qtd_fin = vendas_vu['qtd_fin'].sum()
+        percent_fin = (total_qtd_fin / total_vendas).round(1) * 100
+        total_emplacamento = vendas_vu['emplacamento'].sum()
+        percent_emplacamento = (total_emplacamento / total_vendas).round(2) * 100
+        total_nf_margem = vendas_vu['nf_margem'].sum().round(2)
+        total_faturamento = vendas_vu['nf_vlliquido'].sum().round(2)
+        percent_margem = (total_nf_margem / total_faturamento).round(2) * 100
+
+        
+        
+
+        col19, col20 = st.columns(2)
+        with col19:
+            st.markdown(input("Vendas Ultimos 6 Meses",total_vendas),unsafe_allow_html=True)
+        with col20:
+            st.markdown(input("Vendas por Mes",total_venda_media_mes),unsafe_allow_html=True)
+
+        col21, col22 = st.columns(2)
+        with col21:
+            st.markdown(input("% Financiado",percent_fin),unsafe_allow_html=True)
+        with col22:
+            st.markdown(input("% Emplacamento",percent_emplacamento),unsafe_allow_html=True)
+        st.markdown(input("% Margem",percent_margem),unsafe_allow_html=True)
+
+
+def simulador_repasse(df_vendas):
+
+    # VENDAS ESTOQUE REPASSE
+
+        vendas_repasse = df_vendas[df_vendas['est_cd'].isin(['UF', 'VR'])]
+        total_vendas_repasse = vendas_repasse['nf_nr'].count()
+        total_venda_media_mes_repasse = int(((vendas_repasse['nf_nr'].count())/6).round(0))
+        total_qtd_fin_repasse = vendas_repasse['qtd_fin'].sum()
+        percent_fin_repasse = (total_qtd_fin_repasse / total_vendas_repasse).round(0) * 100
+        total_emplacamento_repasse = vendas_repasse['emplacamento'].sum()
+        percent_emplacamento_repasse = (total_emplacamento_repasse / total_vendas_repasse).round(1) * 100
+        total_nf_margem_repasse = vendas_repasse['nf_margem'].sum().round(2)
+        total_faturamento_repasse = vendas_repasse['nf_vlliquido'].sum().round(2)
+        percent_margem_repasse = (total_nf_margem_repasse / total_faturamento_repasse).round(2) * 100
+    
+        col23, col24 = st.columns(2)
+        with col23:
+            st.markdown(input("Vendas Ultimos 6 Meses",total_vendas_repasse),unsafe_allow_html=True)
+        with col24:
+            st.markdown(input("Vendas por Mes",total_venda_media_mes_repasse),unsafe_allow_html=True)
+
+        col25, col26 = st.columns(2)
+        with col25:
+            st.markdown(input("% Financiado",percent_fin_repasse),unsafe_allow_html=True)
+        with col26:
+            st.markdown(input("% Emplacamento",percent_emplacamento_repasse),unsafe_allow_html=True)
+        st.markdown(input("% Margem",percent_margem_repasse),unsafe_allow_html=True)
+
+def estoque_vu(df_estoque):
+
+    # VENDAS ESTOQUE VU
+
+    estoque_vu = df_estoque[df_estoque['est_cd'].isin(['VU', 'VT'])]
+    total_estoque = estoque_vu['ve_nr'].count()
+    media_dias_estoque = estoque_vu['dias'].mean()
+
+    estoque_repasse = df_estoque[df_estoque['est_cd'].isin(['UF', 'VR'])]
+    total_estoque_repasse = estoque_repasse['ve_nr'].count()
+    media_dias_estoque_repasse = estoque_repasse['dias'].mean()
+
+
+    col27, col28 = st.columns(2)
+    with col27:
+        st.markdown(input("Estoque SHOWROOM",total_estoque),unsafe_allow_html=True)
+    with col28:
+        st.markdown(input("Estoque REPASSE",total_estoque_repasse),unsafe_allow_html=True)
+
+    col29, col30 = st.columns(2)
+    with col29:
+        st.markdown(input("Media DE",media_dias_estoque),unsafe_allow_html=True)
+    with col30:
+        st.markdown(input("Media DE REPASSE",media_dias_estoque_repasse),unsafe_allow_html=True)
+        
+
+def simulador_vn(df_vendas,modelo_interesse):
+        
+        # VENDAS ESTOQUE VN (VEICULOS NOVOS)
+        vendas_vn = df_vendas[df_vendas['est_cd'] == "VN"]
+        total_vendas = vendas_vn['nf_nr'].count()
+        total_venda_media_mes = int(((vendas_vn['nf_nr'].count())/6).round(0))
+        total_qtd_fin = vendas_vn['qtd_fin'].sum()
+        percent_fin = (total_qtd_fin / total_vendas).round(1) * 100
+        total_emplacamento = vendas_vn['emplacamento'].sum()
+        percent_emplacamento = (total_emplacamento / total_vendas).round(2) * 100
+        total_nf_margem = vendas_vn['nf_margem'].sum().round(2)
+        total_faturamento = vendas_vn['nf_vlliquido'].sum().round(2)
+        percent_margem = (total_nf_margem / total_faturamento).round(2) * 100
+
+        st.markdown(input("Modelo Interesse",modelo_interesse),unsafe_allow_html=True)
+
+        col19, col20 = st.columns(2)
+        with col19:
+            st.markdown(input("Vendas Ultimos 6 Meses",total_vendas),unsafe_allow_html=True)
+        with col20:
+            st.markdown(input("Vendas por Mes",total_venda_media_mes),unsafe_allow_html=True)
+
+        col21, col22 = st.columns(2)
+        with col21:
+            st.markdown(input("% Financiado",percent_fin),unsafe_allow_html=True)
+        with col22:
+            st.markdown(input("% Emplacamento",percent_emplacamento),unsafe_allow_html=True)
+        st.markdown(input("% Margem",percent_margem),unsafe_allow_html=True)
+
+def estoque_vn(df_estoque):
+
+    # VENDAS ESTOQUE VN
+
+    estoque_vn = df_estoque[df_estoque['est_cd'] == "VN"]
+    total_estoque = estoque_vn['ve_nr'].count()
+    media_dias_estoque = estoque_vn['dias'].mean()
+
+    col27, col28 = st.columns(2)
+    with col27:
+        st.markdown(input("Estoque SHOWROOM VN",total_estoque),unsafe_allow_html=True)
+    with col28:
+        st.markdown(input("Media DE",media_dias_estoque),unsafe_allow_html=True)
+
+
+
+
+
+
+
+
+
+
