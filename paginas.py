@@ -3,8 +3,9 @@ import requests
 import streamlit.components.v1 as components
 import pandas as pd
 import json
+from datetime import datetime
 from components import input 
-from data import consulta_auto_avaliar,consulta_estoque,trata_estoque,ano_garantia,tem_garantia,resposta,trata_data,referencias_media,referencias_min,referencias_max,trata_itens,define_placa
+from data import consulta_auto_avaliar,trata_estoque,ano_garantia,tem_garantia,resposta,trata_data,referencias_media,referencias_min,referencias_max,trata_itens,define_placa,consulta_negociacao
 
 def dados_da_avaliacao(avaliacao,classificacao):
 
@@ -164,7 +165,7 @@ def simulador_repasse(df_vendas):
         percent_emplacamento_repasse = (total_emplacamento_repasse / total_vendas_repasse).round(1) * 100
         total_nf_margem_repasse = vendas_repasse['nf_margem'].sum().round(2)
         total_faturamento_repasse = vendas_repasse['nf_vlliquido'].sum().round(2)
-        percent_margem_repasse = (total_nf_margem_repasse / total_faturamento_repasse).round(2) * 100
+        percent_margem_repasse = ((total_nf_margem_repasse / total_faturamento_repasse) * 100).round(0)
     
         col23, col24 = st.columns(2)
         with col23:
@@ -185,11 +186,11 @@ def estoque_vu(df_estoque):
 
     estoque_vu = df_estoque[df_estoque['est_cd'].isin(['VU', 'VT'])]
     total_estoque = estoque_vu['ve_nr'].count()
-    media_dias_estoque = estoque_vu['dias'].mean()
+    media_dias_estoque = estoque_vu['dias'].mean().round(0)
 
     estoque_repasse = df_estoque[df_estoque['est_cd'].isin(['UF', 'VR'])]
     total_estoque_repasse = estoque_repasse['ve_nr'].count()
-    media_dias_estoque_repasse = estoque_repasse['dias'].mean()
+    media_dias_estoque_repasse = estoque_repasse['dias'].mean().round(0)
 
 
     col27, col28 = st.columns(2)
@@ -240,13 +241,370 @@ def estoque_vn(df_estoque):
 
     estoque_vn = df_estoque[df_estoque['est_cd'] == "VN"]
     total_estoque = estoque_vn['ve_nr'].count()
-    media_dias_estoque = estoque_vn['dias'].mean()
+    media_dias_estoque = estoque_vn['dias'].mean().round(0)
 
     col27, col28 = st.columns(2)
     with col27:
         st.markdown(input("Estoque SHOWROOM VN",total_estoque),unsafe_allow_html=True)
     with col28:
         st.markdown(input("Media DE",media_dias_estoque),unsafe_allow_html=True)
+
+
+def preenchimento_usuario():
+
+
+
+    #proposta = st.text_input("Digite o nr da Proposta")
+
+    with st.form("meu_form"):
+
+        valor_venda = st.text_input("Qual o valor de venda")
+        margem = st.text_input("Qual o valor de margem?")
+
+        top = st.selectbox(
+                            "Tem Top?",
+                            ["Sim", "Não"]
+                        )
+        
+
+        valor_top = st.text_input("Digite o valor do TOP:")
+
+        bonus = st.selectbox(
+                            "Tem Bonus Agregado do Fabricante?",
+                            ["Sim", "Não"]
+                        )
+        
+
+        valor_bonus = st.text_input("Digite o valor do Bonus:")
+
+        # VENDAS ESTOQUE VN
+        emplacamento = st.selectbox(
+                            "Tem Emplacamento?",
+                            ["Sim", "Não"]
+                        )
+                        
+
+ 
+        valor_emplacamento = st.text_input("Digite o valor do emplacamento:")
+        
+        financiamento = st.selectbox(
+                            "Tem Financiamento?",
+                            ["Sim", "Não"]
+                        )
+        
+
+        valor_financiamento = st.text_input("Digite o valor do Financiamento:")
+        if valor_financiamento:
+            retorno_pb = float(valor_financiamento) * 0.035
+
+        acessorios = st.selectbox(
+                            "Tem Acessorio?",
+                            ["Sim", "Não"]
+                        )
+        
+        entrega_vu = st.selectbox(
+                            "O cliente vai entregar o carro imediato?",
+                            ["Sim", "Não"]
+                        )
+        enviar = st.form_submit_button("Enviar")
+
+    
+    
+def analise_financeira(avaliacao,negociacao):
+
+    dados = negociacao[0]
+    custo_previsto = dados["expectativa_cliente"] + avaliacao['expenses_value']
+    
+
+    # DADOS B2B
+
+    b2b_for = referencias_media(avaliacao['references'],8)
+    #custo_previsto = avaliacao['valuation_value'] + avaliacao['expenses_value']
+    margem_b2b_for = b2b_for - custo_previsto
+    percent_b2b_for = ((margem_b2b_for / b2b_for) * 100)
+
+    b2b_ce = referencias_max(avaliacao['references'],8)
+    margem_b2b_ce = b2b_ce - custo_previsto
+    percent_b2b_ce = ((margem_b2b_ce / b2b_ce) * 100)
+
+    b2b_br = referencias_min(avaliacao['references'],8)
+    margem_b2b_br = b2b_br - custo_previsto
+    percent_b2b_br = ((margem_b2b_br / b2b_br) * 100)
+
+    # DADOS B2C
+
+    b2c_for = referencias_media(avaliacao['references'],7)
+    margem_b2c_for = b2c_for - custo_previsto
+    percent_b2c_for = (margem_b2c_for / b2c_for) * 100
+ 
+
+    b2c_ce = referencias_max(avaliacao['references'],7)
+    margem_b2c_ce = b2c_ce - custo_previsto
+    percent_b2c_ce = ((margem_b2c_ce / b2c_ce))
+
+    b2c_br = referencias_min(avaliacao['references'],7)
+    margem_b2c_br = b2c_br - custo_previsto
+    percent_b2c_br = ((margem_b2c_br / b2c_br) * 100)               
+
+    valor_avaliado = avaliacao['valuation_value']
+
+    # simulacao b2b
+
+    simulacao_b2b_br = dados['valor_plus_bancario'] + dados['margem'] + margem_b2b_br
+    simulacao_b2b_ce = dados['valor_plus_bancario'] + dados['margem'] + margem_b2b_ce
+    simulacao_b2b_for = dados['valor_plus_bancario'] + dados['margem'] + margem_b2b_for
+
+    # simulacao b2c
+
+    simulacao_b2c_br = dados['valor_plus_bancario'] + dados['margem'] + margem_b2c_br
+    simulacao_b2c_ce = dados['valor_plus_bancario'] + dados['margem'] + margem_b2c_ce
+    simulacao_b2c_for = dados['valor_plus_bancario'] + dados['margem'] + margem_b2c_for
+
+    st.markdown(input("Expectativa do Cliente",value=dados["expectativa_cliente"]),unsafe_allow_html=True)
+    
+    st.divider()
+
+
+     # analise b2b br
+
+    col1, col2, col3= st.columns(3)
+
+    with col1:
+        st.markdown(input("B2B BR",value=round(b2b_br,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem B2B BR",value=round(margem_b2b_br,0)),unsafe_allow_html=True)
+    with col3:
+        st.markdown(input("% Margem",value=round(percent_b2b_br,0)),unsafe_allow_html=True)
+
+    # analise b2b ce
+
+    st.divider()
+
+    col1, col2, col3= st.columns(3)
+
+    with col1:
+        st.markdown(input("B2B CE",value=round(b2b_ce,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem B2B CE",value=round(margem_b2b_ce,0)),unsafe_allow_html=True)
+    with col3:
+        st.markdown(input("% Margem",value=round(percent_b2b_ce,0)),unsafe_allow_html=True)
+
+    # analise b2b for
+
+    st.divider()
+
+    col1, col2, col3= st.columns(3)
+
+    with col1:
+        st.markdown(input("B2B For",value=round(b2b_for,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem B2B For",value=round(margem_b2b_for,0)),unsafe_allow_html=True)
+    with col3:
+        st.markdown(input("% Margem",value=round(percent_b2b_for,0)),unsafe_allow_html=True)
+
+    #b2c br
+
+    st.divider()
+
+    col1, col2, col3= st.columns(3)
+
+    with col1:
+        st.markdown(input("B2C BR",value=round(b2c_br,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem B2C BR",value=round(margem_b2c_br,0)),unsafe_allow_html=True)
+    with col3:
+        st.markdown(input("% Margem",value=round(percent_b2c_br,0)),unsafe_allow_html=True)
+    
+    #b2c ce
+
+    st.divider()
+
+
+    col1, col2, col3= st.columns(3)
+
+    with col1:
+        st.markdown(input("B2C CE",value=round(b2c_ce,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem B2C CE",value=round(margem_b2c_ce,0)),unsafe_allow_html=True)
+    with col3:
+        st.markdown(input("% Margem",value=round(percent_b2c_ce,0)),unsafe_allow_html=True)
+    
+    #b2c for
+
+    st.divider()
+
+    col1, col2, col3= st.columns(3)
+
+    with col1:
+        st.markdown(input("B2C For",value=round(b2c_for,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem B2C For",value=round(margem_b2c_for,0)),unsafe_allow_html=True)
+    with col3:
+        st.markdown(input("% Margem",value=round(percent_b2c_for,0)),unsafe_allow_html=True)
+
+    st.divider()
+
+    col1, col2= st.columns(2)
+
+    with col1:
+        st.markdown("###### Pontos Positivos")
+        #st.markdown("Pontos Positivos ✅")
+        if dados["cliente_paga_emplacamento"] == "S ":
+            st.markdown("Emplacamento Interno ✅")
+
+        if dados["emplacamento_desconto"] == "N ":
+            st.markdown("Emplacamento sem Desconto ✅")
+
+        if dados["entrega_vu"] == "S ":
+            data = datetime.fromtimestamp(dados['previsao_entrega_formatada'] / 1000)
+
+            data_formatada = data.strftime("%d/%m/%Y")
+            #st.markdown("Entrega do VU Imediata ✅" & {dados["previsao_entrega_formatada"]})
+            st.markdown(
+                        f"Entrega do VU Imediata ✅ {data_formatada}"
+                    )
+
+        if dados["financiamento"] == "S ":
+            st.markdown("Financiamento Interno ✅")
+
+        if dados["acessorios"] == "S ":
+            st.markdown("Acessorio Vendido ✅")
+    with col2:
+        st.markdown("###### Pontos Negativos")
+        if dados["cliente_paga_emplacamento"] == "N ":
+            st.markdown("Emplacamento Interno ❌")
+
+        if dados["emplacamento_desconto"] == "S ":
+            st.markdown("Emplacamento com Desconto ❌")
+
+        if dados["entrega_vu"] == "N ":
+            st.markdown("Entrega do VU Imediata ❌")
+
+        if dados["financiamento"] == "N ":
+            st.markdown("Financiamento Interno ❌")
+
+        if dados["acessorios"] == "N ":
+            st.markdown("Acessorio Vendido ❌")
+
+    st.divider()
+
+    st.markdown("###### Simulação de negócio")
+    st.write("A simulação é a soma das margens do VN com a previsão de margem do VU")
+    st.divider()
+
+    # SIMULACAO B2C
+
+    st.write("Simulação no B2B BR")
+    col1, col2, col3, col4= st.columns(4)
+
+    
+    with col1:
+        st.markdown(input("Margem B2B BR",value=round(margem_b2b_br,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem do VN",value=dados['margem']),unsafe_allow_html=True)
+    with col3:
+       st.markdown(input("Plus Bancario do VN",value=dados['valor_plus_bancario']),unsafe_allow_html=True)
+    with col4:
+        st.markdown(input("Margem FINAL",value=round(simulacao_b2b_br,0)),unsafe_allow_html=True)
+
+    st.divider()
+
+    st.write("Simulação no B2B CE")
+    col1, col2, col3, col4= st.columns(4)
+    
+    with col1:
+        st.markdown(input("Margem B2B CE",value=round(margem_b2b_ce,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem do VN",value=dados['margem']),unsafe_allow_html=True)
+    with col3:
+       st.markdown(input("Plus Bancario do VN",value=dados['valor_plus_bancario']),unsafe_allow_html=True)
+    with col4:
+        st.markdown(input("Margem FINAL",value=round(simulacao_b2b_ce,0)),unsafe_allow_html=True)
+
+    st.divider()
+
+    st.write("Simulação no B2B FOR")
+    col1, col2, col3, col4= st.columns(4)
+    
+    with col1:
+        st.markdown(input("Margem B2B FOR",value=round(margem_b2b_for,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem do VN",value=dados['margem']),unsafe_allow_html=True)
+    with col3:
+       st.markdown(input("Plus Bancario do VN",value=dados['valor_plus_bancario']),unsafe_allow_html=True)
+    with col4:
+        st.markdown(input("Margem FINAL",value=round(simulacao_b2b_for,0)),unsafe_allow_html=True)
+
+    st.divider()
+
+    # SIMULACAO B2C
+    st.write("Simulação no B2C BR")
+    col1, col2, col3, col4= st.columns(4)
+
+    
+    with col1:
+        st.markdown(input("Margem B2C BR",value=round(margem_b2c_br,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem do VN",value=dados['margem']),unsafe_allow_html=True)
+    with col3:
+       st.markdown(input("Plus Bancario do VN",value=dados['valor_plus_bancario']),unsafe_allow_html=True)
+    with col4:
+        st.markdown(input("Margem FINAL",value=round(simulacao_b2c_br,0)),unsafe_allow_html=True)
+
+    st.divider()
+
+    st.write("Simulação no B2C CE")
+    col1, col2, col3, col4= st.columns(4)
+    
+    with col1:
+        st.markdown(input("Margem B2C CE",value=round(margem_b2c_ce,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem do VN",value=dados['margem']),unsafe_allow_html=True)
+    with col3:
+       st.markdown(input("Plus Bancario do VN",value=dados['valor_plus_bancario']),unsafe_allow_html=True)
+    with col4:
+        st.markdown(input("Margem FINAL",value=round(simulacao_b2c_ce,0)),unsafe_allow_html=True)
+
+    st.divider()
+
+    st.write("Simulação no B2B FOR")
+    col1, col2, col3, col4= st.columns(4)
+    
+    with col1:
+        st.markdown(input("Margem B2B FOR",value=round(margem_b2c_for,0)),unsafe_allow_html=True)
+    with col2:
+        st.markdown(input("Margem do VN",value=dados['margem']),unsafe_allow_html=True)
+    with col3:
+       st.markdown(input("Plus Bancario do VN",value=dados['valor_plus_bancario']),unsafe_allow_html=True)
+    with col4:
+        st.markdown(input("Margem FINAL",value=round(simulacao_b2c_for,0)),unsafe_allow_html=True)
+    
+    
+    
+
+
+
+    
+
+
+
+def dados_negociacao(df_negociacao):
+
+    # VENDAS ESTOQUE VN
+
+    dados = df_negociacao[0]
+
+    col1, col2= st.columns(2)
+
+    with col1:
+        st.markdown(input("Valor Venda",value=dados['valor_venda']),unsafe_allow_html=True)
+        st.markdown(input("Valor Financiado",value=dados['valor_financiamento']),unsafe_allow_html=True)
+    
+    
+    with col2:
+        st.markdown(input("Margem Liquida",value=dados['margem']),unsafe_allow_html=True)
+        st.markdown(input("Plus Bancario",value=dados['valor_plus_bancario']),unsafe_allow_html=True)
+        
 
 
 

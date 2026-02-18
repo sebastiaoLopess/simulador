@@ -105,13 +105,6 @@ def consulta_auto_avaliar(placa,empresa):
         return response.status_code
 
 
-
-def consulta_estoque(placa):
-    url = 'https://c8b8-200-194-101-215.ngrok-free.app'
-    response = requests.get(url, params={'placa': placa})
-    data = response.json()
-    return data
-
 def trata_estoque(data):
     json_data = json.loads(data)
     df = pd.DataFrame.from_records(json_data)
@@ -259,7 +252,7 @@ def consulta_vendas_simulador(modelo):
 
         # Se não houver dados, retorna DataFrame vazio com as colunas esperadas
         if not data:
-            return pd.DataFrame(columns=['placa','km','empresa','b2b','b2c','vec'])
+            return pd.DataFrame(columns=['Familia','cg_bairro','cg_cd','cg_cidade','cg_dtaniv','cg_email','cg_nm','devolucao','emp_cd','emp_ds','emp_grupo','emplacamento','est_cd','est_ds','financeira','fun_cd','fun_nmguerra','marc_ds','me_tpmov','mod_ds','nf_dtemis','nf_margem','nf_nr','nf_serie','nf_vl','nf_vlliquido','pad_ds','plus_bancario','prof_cd','prof_ds','qtd_fin','spf','uf_cd','v_usados','valor_financiado','valor_servicos','ve_chassi','ve_nr','ve_placa'])
 
         df_vendas = pd.DataFrame(data)
 
@@ -267,7 +260,7 @@ def consulta_vendas_simulador(modelo):
 
     except Exception as e:
         print(f"Erro ao consultar revisão: {e}")
-        return pd.DataFrame(columns=['placa','km','empresa','b2b','b2c','vec'])
+        return pd.DataFrame(columns=['Familia','cg_bairro','cg_cd','cg_cidade','cg_dtaniv','cg_email','cg_nm','devolucao','emp_cd','emp_ds','emp_grupo','emplacamento','est_cd','est_ds','financeira','fun_cd','fun_nmguerra','marc_ds','me_tpmov','mod_ds','nf_dtemis','nf_margem','nf_nr','nf_serie','nf_vl','nf_vlliquido','pad_ds','plus_bancario','prof_cd','prof_ds','qtd_fin','spf','uf_cd','v_usados','valor_financiado','valor_servicos','ve_chassi','ve_nr','ve_placa'])
     
 
 def consulta_estoque_vu(modelo):
@@ -278,7 +271,7 @@ def consulta_estoque_vu(modelo):
 
         # Se não houver dados, retorna DataFrame vazio com as colunas esperadas
         if not data:
-            return pd.DataFrame(columns=['placa','km','empresa','b2b','b2c','vec'])
+            return pd.DataFrame(columns=['Familia','dias','emp_cd','est_cd','b2c','est_ds','marc_ds','mod_ds','nf_dtent','nf_vltot','ve_chassi','ve_fabmod','ve_km','ve_nr','ve_placa','vecusto_dt','vecusto_vl'])
 
         df_estoque = pd.DataFrame(data)
 
@@ -286,7 +279,38 @@ def consulta_estoque_vu(modelo):
 
     except Exception as e:
         print(f"Erro ao consultar revisão: {e}")
-        return pd.DataFrame(columns=['placa','km','empresa','b2b','b2c','vec'])
+        return pd.DataFrame(columns=['Familia','dias','emp_cd','est_cd','b2c','est_ds','marc_ds','mod_ds','nf_dtent','nf_vltot','ve_chassi','ve_fabmod','ve_km','ve_nr','ve_placa','vecusto_dt','vecusto_vl'])
+    
+
+
+def preenche_formulario(payload):
+    url = 'http://200.194.101.205:8000/preencheform'
+    
+  
+    try:
+        response = requests.post(url, json=payload, timeout=20)
+        if response.ok:
+            st.success("Enviado e inserido com sucesso!")
+        else:
+            st.error(f"Falhou ({response.status_code}): {response.text}")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Erro ao chamar API: {e}")
+
+def consulta_negociacao(placa,empresa):
+    url = 'http://200.194.101.205:8000/consultaform'
+    response = requests.get(url, params={'placa': placa, 'empresa': empresa})
+    try:
+        data = response.json()
+
+        # Se não houver dados, retorna DataFrame vazio com as colunas esperadas
+        if not data:
+            return pd.DataFrame(columns=['acessorios','bonus','cliente_paga_emplacamento','condicionante','dt_bonus_formatada','dt_criacao','emplacamento','emplacamento_desconto','empresa','entrega_vu','expectativa_cliente','financiamento','id','margem','numero_carta','placa','plus_bancario','previsao_entrega_formatada','top_tp','valor_bonus','valor_financiamento','valor_plus_bancario','valor_venda'])
+
+        return data
+
+    except Exception as e:
+        print(f"Erro ao consultar revisão: {e}")
+        return pd.DataFrame(columns=['acessorios','bonus','cliente_paga_emplacamento','condicionante','dt_bonus_formatada','dt_criacao','emplacamento','emplacamento_desconto','empresa','entrega_vu','expectativa_cliente','financiamento','id','margem','numero_carta','placa','plus_bancario','previsao_entrega_formatada','top_tp','valor_bonus','valor_financiamento','valor_plus_bancario','valor_venda'])
 
     
 

@@ -4,8 +4,8 @@ import streamlit.components.v1 as components
 import pandas as pd
 import json
 from components import input 
-from data import consulta_auto_avaliar,consulta_estoque,trata_estoque,ano_garantia,tem_garantia,resposta,trata_data,consulta_revisao,consulta_vendas_simulador,consulta_estoque_vu
-from paginas import dados_da_avaliacao,referencias_garantia, referencias, itens_avaliados,simulador_vu,simulador_repasse,estoque_vu,simulador_vn,estoque_vn
+from data import consulta_auto_avaliar,trata_estoque,ano_garantia,tem_garantia,resposta,trata_data,consulta_revisao,consulta_vendas_simulador,consulta_estoque_vu,consulta_negociacao
+from paginas import dados_da_avaliacao,referencias_garantia, referencias, itens_avaliados,simulador_vu,simulador_repasse,estoque_vu,simulador_vn,estoque_vn,preenchimento_usuario,analise_financeira,dados_negociacao
 
 
 opcoes = {
@@ -118,7 +118,7 @@ cod_auth = [
 
 empresas = list(opcoes.keys())
 
-st.header("SIMULADOR DE VENDA INDUZIDA", divider="gray")
+st.header("VDI CARMAIS", divider="gray")
 col1, col2 = st.columns(2)
 with col1:
     placa = st.text_input("Placa")
@@ -132,27 +132,31 @@ empresa = st.selectbox(
 
 emp_selecionada = opcoes[empresa]
 
+
+
 button = st.button("Gerar TCO", type="primary")
 
 if button and autenticator in str(cod_auth) and autenticator:
 
     avaliacao = consulta_auto_avaliar(placa,emp_selecionada)
+    negociacao = consulta_negociacao(placa,emp_selecionada)
     modelo_avaliado = avaliacao['vehicle']['model']['name']
     modelo_interesse = avaliacao['interested_vehicle_details']['model']['name']
 
     venda = consulta_vendas_simulador(modelo_avaliado)
+    venda_interesse = consulta_vendas_simulador(modelo_interesse)
     df_estoque = consulta_estoque_vu(modelo_avaliado)
     df_estoque_interesse = consulta_estoque_vu(modelo_interesse)
 
-    #revisoes = consulta_revisao(placa)
+    st.subheader("DADOS DA NEGOCIAÇÃO",divider="gray")
 
+    dados_negociacao(negociacao)
 
-    #estoque = consulta_estoque(placa)
-    #df_estoque = trata_estoque(estoque)
 
     st.subheader("DADOS DO VEICULO DE INTERESSE",divider="gray")
-    simulador_vn(venda,modelo_interesse)
+    simulador_vn(venda_interesse,modelo_interesse)
     estoque_vn(df_estoque_interesse)
+
 
     st.subheader("DADOS DO VU AVALIADO",divider="gray")
 
@@ -168,9 +172,6 @@ if button and autenticator in str(cod_auth) and autenticator:
         #st.subheader("DADOS DA VENDA REPASSE",divider="gray")
         st.markdown("###### DADOS REPASSE")
         simulador_repasse(venda)
-
-    estoque_vu(df_estoque)
-
 
     col3, col4 = st.columns(2)
     with col3:
@@ -191,12 +192,19 @@ if button and autenticator in str(cod_auth) and autenticator:
 
     itens_avaliados(avaliacao)
 
-    #st.subheader("REVISÕES",divider="gray")
-    #st.dataframe(revisoes)
+    st.subheader("ANALISE ECONOMICA DO RISCO",divider="gray")
+
+    st.write("As previsões abaixo tem como premissa de custo a expectatica do cliente")
 
 
-    #st.subheader("MOVIMENTAÇÃO ESTOQUE",divider="gray")
-    #st.table(df_estoque)
+    analise_financeira(avaliacao,negociacao)
+
+    
+  
+
+
+
+
 
 
 
