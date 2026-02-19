@@ -35,6 +35,8 @@ opcoes = {
 
 empresas = list(opcoes.keys())
 
+st.link_button("Abrir VDI", "https://simuladorcarmais.streamlit.app/")
+
 st.subheader("FORMULÁRIO VDI",divider="gray")
 
 
